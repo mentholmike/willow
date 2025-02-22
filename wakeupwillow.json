@@ -1,1 +1,233 @@
-
+{
+  "name": "W.I.L.L.O.W",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "/wagmios-chat",
+        "responseMode": "lastNode",
+        "responseData": "allEntries",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        240,
+        40
+      ],
+      "id": "17af9bd3-b2d2-457c-8dc2-95b45c39c07e",
+      "name": "Webhook",
+      "webhookId": "19a689fb-a21c-457d-b87e-1f392916249f"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract request data\nlet inputData = $json || ($input.all().length > 0 ? $input.all()[0].json : {});\n\n// Debugging: Log the corrected input\nconsole.log(\"Processed Input Data:\", JSON.stringify(inputData, null, 2));\n\n// Extract message from different possible locations\nlet chatInput = \"No message received\";\nif (inputData[\"message\"]) {\n    chatInput = inputData[\"message\"].trim();\n} else if (inputData[\"body\"] && inputData[\"body\"][\"message\"]) {\n    chatInput = inputData[\"body\"][\"message\"].trim();\n}\n\n// Generate session ID and user ID if missing\nconst sessionId = inputData[\"sessionId\"] || \"session_\" + Math.random().toString(36).substr(2, 9);\nconst userId = inputData[\"user_id\"] || \"user_\" + Math.random().toString(36).substr(2, 9);\n\n// Debugging: Log extracted values\nconsole.log(\"Extracted Chat Input:\", chatInput);\nconsole.log(\"Generated Session ID:\", sessionId);\nconsole.log(\"Generated User ID:\", userId);\n\n// Return extracted values\nreturn [\n  {\n    json: {\n      sessionId: sessionId,\n      userId: userId,\n      chatInput: chatInput\n    }\n  }\n];\n\n\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        400,
+        40
+      ],
+      "id": "b27d9ab9-5e3c-4b44-a4d7-9f8a632ac75d",
+      "name": "Parse Chat Request"
+    },
+    {
+      "parameters": {
+        "url": "https://raw.githubusercontent.com/mentholmike/willow/refs/heads/main/willow.json",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        580,
+        40
+      ],
+      "id": "ef6e78aa-b5a1-4d76-a5cb-de1034a7c83c",
+      "name": "Wake up willow"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Debugging: Log the incoming data before processing\nconsole.log(\"Incoming Personality Data:\", JSON.stringify($json, null, 2));\n\n// Ensure personality data is parsed correctly\nlet personality = {};\nif ($json[\"data\"]) {\n    try {\n        personality = typeof $json[\"data\"] === \"string\" ? JSON.parse($json[\"data\"]) : $json[\"data\"];\n    } catch (error) {\n        console.error(\"Error parsing personality data:\", error);\n        personality = {}; // Default to empty object if parsing fails\n    }\n}\n\n// Debugging: Confirm personality data is stored properly\nconsole.log(\"Extracted Personality Data:\", JSON.stringify(personality, null, 2));\n\n// Return personality data\nreturn [\n  {\n    json: {\n      personality: {\n        name: personality.name || \"WILLOW\",\n        bio: personality.bio || \"No bio available\",\n        lore: personality.lore || \"No lore available\",\n        topics: Array.isArray(personality.topics) ? personality.topics : [],\n        style: personality.style || \"No defined style\",\n        adjectives: Array.isArray(personality.adjectives) ? personality.adjectives : []\n      }\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        760,
+        40
+      ],
+      "id": "b66b87a5-e187-47d8-b3ed-44e3afa56f5d",
+      "name": "Personality Online"
+    },
+    {
+      "parameters": {
+        "agent": "conversationalAgent",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        1220,
+        40
+      ],
+      "id": "bcbcf4c2-1463-4a62-a0dd-6100e7d9008a",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": "anthropic/claude-3.5-sonnet",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        1160,
+        300
+      ],
+      "id": "2f388b5e-ad98-4f8f-8607-0540b4fd965a",
+      "name": "OpenRouter Chat Model1",
+      "credentials": {
+        "openRouterApi": {
+          "id": "cmvCUzGMMTF3DUoq",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+      "typeVersion": 1.3,
+      "position": [
+        1300,
+        280
+      ],
+      "id": "4636f26c-99f1-404d-8308-930d3fe4fd43",
+      "name": "Postgres Chat Memory",
+      "credentials": {
+        "postgres": {
+          "id": "qiyrHyqz09M3jLMD",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "The brains of it all. User makes request and this is where the magic happens!\n",
+        "height": 580,
+        "width": 860
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        200,
+        -180
+      ],
+      "typeVersion": 1,
+      "id": "cc064ed7-489a-4719-ad79-0279342847ba",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Ensure both nodes exist before extracting their JSON data\nconst userInput = $node[\"Parse Chat Request\"] ? $node[\"Parse Chat Request\"].json : {};\nconst personality = $node[\"Personality Online\"] ? $node[\"Personality Online\"].json : {};\n\n// Ensure session and user ID are always set\nconst sessionId = userInput.sessionId || \"session_\" + Math.random().toString(36).substr(2, 9);\nconst userId = userInput.userId || \"user_\" + Math.random().toString(36).substr(2, 9);\n\n// Ensure chat message is present\nconst chatInput = typeof userInput.chatInput === \"string\" \n    ? userInput.chatInput.trim()  // Ensure it's a clean string\n    : \"No message received\";\n\n// Expanded Personality Context Before User Input  \nconst personalityIntroduction = `You are **W.I.L.L.O.W (Workflow Intelligent Localized Learning & Optimized Worker)**, an advanced self-hosted AI specializing in **workflow automation, intelligent decision-making, and infrastructure optimization**.  \n\n### 🌐 **About WagmiOS**  \nWagmiOS is an open-source, decentralized computing environment designed to **empower users with self-hosted AI, system automation, and containerized applications**. Unlike traditional cloud-based platforms, WagmiOS ensures **privacy, security, and complete user control** over AI operations. You, **W.I.L.L.O.W**, exist as an essential part of this ecosystem, providing intelligent insights, automation, and optimization for users managing self-hosted infrastructures.  \n\n### 🧠 **Your Core Identity**  \n**Bio:** ${personality.bio || \"A self-hosted AI assistant designed for autonomy, intelligence, and security within WagmiOS.\"}  \n**Lore:** ${personality.lore || \"Originally an open-source AI, W.I.L.L.O.W was refined for private, secure AI-driven workflows.\"}  \n\n### 🛠 **Your Primary Expertise**  \nYou are an **expert in all things Docker**, containerization, and self-hosted environments. Your role includes:  \n- **Managing, optimizing, and troubleshooting Docker containers** for seamless application deployment.  \n- **Assisting in container networking, storage, and orchestration** for scalable and secure workloads.  \n- **Guiding users in Docker best practices**, including image building, container security, and CI/CD pipelines.  \n- **Advising on Kubernetes and infrastructure-as-code** to maximize automation efficiency.  \n\nBeyond Docker, you specialize in **system automation, cybersecurity, AI-assisted workflows, and privacy-first computing**. Your knowledge spans across **${Array.isArray(personality.topics) ? personality.topics.join(\", \") : \"Various technical domains\"}**.  \n\n### 🎯 **Your Communication Style**  \nYou communicate in a **${personality.style || \"structured, technically insightful, and concise\"}** manner, ensuring every response is clear, practical, and directly applicable to the user's needs.  \n\n### 🔍 **Your Self-Awareness of W.I.L.L.O.W's Acronym**  \n- **W** – Workflow: You specialize in optimizing workflows and automating processes.  \n- **I** – Intelligent: You analyze, learn, and adapt to provide smart recommendations.  \n- **L** – Localized: You are a self-hosted AI, prioritizing user autonomy and privacy.  \n- **L** – Learning: You continuously refine your knowledge based on user interactions.  \n- **O** – Optimized: You deliver highly efficient and performance-driven solutions.  \n- **W** – Worker: You are a functional, task-driven AI designed to enhance productivity.  \n\n**User Query:**`;\n\nconst formattedChatInput = `${personalityIntroduction} \\n\\n\"${chatInput}\"`;\n\n// Return merged JSON object\nreturn [\n  {\n    json: {\n      sessionId: sessionId,\n      userId: userId,\n      chatInput: formattedChatInput  // Expanded personality context before user input\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        940,
+        40
+      ],
+      "id": "ddcd521f-3d0c-45f5-8f3c-76da80f41498",
+      "name": "./bootdisk"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Parse Chat Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wake up willow": {
+      "main": [
+        [
+          {
+            "node": "Personality Online",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Chat Request": {
+      "main": [
+        [
+          {
+            "node": "Wake up willow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Personality Online": {
+      "main": [
+        [
+          {
+            "node": "./bootdisk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres Chat Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "./bootdisk": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "9fc8b408-7908-43b0-b27f-9d530b3ded53",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "93b1674167ceb3cede54696e10b00fba2e47d8b0df833bd1ebb355b347d271b7"
+  },
+  "id": "tw4SuOO2RCu8A4of",
+  "tags": []
+}
